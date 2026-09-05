@@ -98,9 +98,14 @@ const roundSmart = (v) =>
 
 /* ---------- core analysis ---------- */
 
-export function analyzeFairPrice({ name, category, price, description }) {
+export function analyzeFairPrice({ name, category, price, description, unit }) {
   const crop = matchCrop(name);
   if (!crop) return { matched: false, name };
+
+  /* The mandi dataset is ₹/kg, so price comparison only makes
+     sense when the farmer sells per kg. Legacy products (no
+     unit field) are treated as per-kg produce. */
+  const perKg = unit !== "unit";
 
   const entry = MARKET_PRICES.find((p) => p.name === crop);
   const hist = entry.history;
@@ -140,11 +145,13 @@ export function analyzeFairPrice({ name, category, price, description }) {
   const budget = roundSmart(fair * (1 - spread));
   const premium = roundSmart(fair * (1 + spread));
 
-  bullets.push("💡 For direct-to-consumer sale on E-Farm (no middlemen), a fair price is around **₹" + fair + "/unit**.");
+  bullets.push(perKg
+    ? "💡 For direct-to-consumer sale on E-Farm (no middlemen), a fair price is around **₹" + fair + "/kg**."
+    : "💡 Mandi-based reference: **₹" + fair + "/kg**. You sell per unit (piece/pack), so use it as guidance only.");
 
   const existing = Number(price);
   let advice = null;
-  if (existing > 0) {
+  if (perKg && existing > 0) {
     const diff = ((existing - fair) / fair) * 100;
     advice = diff > 12 ? "high" : diff < -12 ? "low" : "fair";
     if (advice === "high") bullets.push("⚠️ Your price (₹" + existing + ") is " + diff.toFixed(0) + "% above the fair band — premium quality can justify it, otherwise it may slow orders.");
@@ -155,7 +162,7 @@ export function analyzeFairPrice({ name, category, price, description }) {
   return {
     matched: true, name, crop, mandiQuintal: cur, mandiKg,
     trendPct, momentumPct, volatility: vol, factor,
-    budget, fair, premium, advice, bullets,
+    budget, fair, premium, advice, bullets, unit: perKg ? "kg" : "unit",
     source: "E-Farm market engine",
   };
 }
@@ -165,9 +172,8 @@ export function analyzeFairPrice({ name, category, price, description }) {
 const withTimeout = (p, ms) =>
   Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 
-export async function suggestFairPriceAI({ name, category, price, description }) {
-  const local = analyzeFairPrice({ name, category, price, description });
-
+export async function suggestFairPriceAI({ name, category, price, description, unit }) {
+  const local = analyzeFairPrice({ name, category, price, description, unit });
   let aiText = "";
   if (hasApiKey()) {
     try {
@@ -177,7 +183,9 @@ export async function suggestFairPriceAI({ name, category, price, description })
         (local.matched
           ? "Today's E-Farm mandi snapshot: " + local.crop + " ₹" + local.mandiQuintal + "/quintal (₹" + local.mandiKg + "/kg), 6-month change " + local.trendPct.toFixed(1) + "%."
           : "No mandi rate is available for this item in our snapshot.") + "\n" +
-        (Number(price) > 0 ? "The farmer plans to charge ₹" + price + " per unit." : "No price set yet.") + "\n" +
+        (Number(price) > 0
+          ? "The farmer plans to charge ₹" + price + (unit === "unit" ? " per unit (piece/pack)." : " per kg.")
+          : "No price set yet.") + "\n" +
         "In 3 short bullet points (max 15 words each), assess whether this price is fair for a direct-to-consumer sale in India and give one concrete pricing tip with ₹ numbers. No headings.";
       const out = await withTimeout(askEfarmAI({ question: q, deepThink: false }), 25000);
       if (out && out.mode === "ai" && out.text) {
@@ -195,9 +203,9 @@ export async function suggestFairPriceAI({ name, category, price, description })
 
 /* ---------- lightweight badge for existing listings ---------- */
 
-export function evaluatePrice(name, category, price) {
-  const r = analyzeFairPrice({ name, category, price });
-  if (!r.matched || !(Number(price) > 0)) return null;
+export function evaluatePrice(name, category, price, unit) {
+  const r = analyzeFairPrice({ name, category, price, unit });
+  if (!r.matched || !(Number(price) > 0) || !r.advice) return null;
   if (r.advice === "fair") return { cls: "green", label: "Fair price", fair: r.fair, mandiKg: r.mandiKg };
   if (r.advice === "high") return { cls: "blue", label: "Above market", fair: r.fair, mandiKg: r.mandiKg };
   return { cls: "amber", label: "Below market", fair: r.fair, mandiKg: r.mandiKg };

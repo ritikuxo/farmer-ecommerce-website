@@ -905,6 +905,7 @@ function ConsumerDashboard() {
           productId: product.id,
           name: product.name || "Product",
           price: Number(product.price) || 0,
+          unit: product.unit || "",
           category: product.category || "",
           qty: 1,
           maxQty: availableQty,
@@ -1336,6 +1337,7 @@ function ConsumerDashboard() {
         farmerEmail: selectedProduct.farmerEmail || "",
         farmerName: selectedProduct.farmerName || "",
         price: numericPrice,
+        unit: selectedProduct.unit || "",
         quantity: numericQuantity,
         totalAmount: totalAmount,
         // Payment breakdown
@@ -1571,6 +1573,7 @@ function ConsumerDashboard() {
       name: i.name,
       category: i.category || "",
       price: Number(i.price) || 0,
+      unit: i.unit || "",
       quantity: Number(i.qty) || 0,
       totalAmount: (Number(i.price) || 0) * (Number(i.qty) || 0),
       farmerId: i.farmerId || "",
@@ -2690,6 +2693,7 @@ function ConsumerDashboard() {
                           {Number(
                             product.price
                           ).toFixed(2)}
+                          {product.unit === "kg" ? "/kg" : product.unit === "unit" ? "/unit" : ""}
                         </strong>
 
                         <span
@@ -2703,7 +2707,7 @@ function ConsumerDashboard() {
                           {Number(
                             product.quantity
                           ) || 0}{" "}
-                          available
+                          {product.unit === "kg" ? "kg " : ""}available
                         </span>
 
                       </div>
@@ -3046,7 +3050,7 @@ function ConsumerDashboard() {
                               </div>
                               <div style={{ textAlign: "right" }}>
                                 <p><strong>₹{Number(item.totalAmount).toFixed(2)}</strong></p>
-                                <p style={{ fontSize: "12px", color: "#6b7280" }}>{item.quantity} × ₹{Number(item.price).toFixed(2)}</p>
+                                <p style={{ fontSize: "12px", color: "#6b7280" }}>{item.quantity}{item.unit === "kg" ? " kg" : ""} × ₹{Number(item.price).toFixed(2)}{item.unit === "kg" ? "/kg" : ""}</p>
                               </div>
                             </div>
                             <p style={{ fontSize: "11px", color: "#2e7d32", marginTop: "4px" }}>👨‍🌾 {item.farmerName || "Unknown Farmer"}</p>
@@ -3640,7 +3644,8 @@ function ConsumerDashboard() {
                 <div>
                   <h3 style={{ margin: "0 0 5px" }}>{selectedProduct?.name}</h3>
                   <p style={{ margin: 0, color: "#2e7d32", fontWeight: 700 }}>
-                    ₹{Number(selectedProduct?.price || 0).toFixed(2)} / unit
+                    ₹{Number(selectedProduct?.price || 0).toFixed(2)}{" "}
+                    {selectedProduct?.unit === "kg" ? "/ kg" : "/ unit"}
                   </p>
                   <p
                     style={{
@@ -4298,7 +4303,7 @@ function ConsumerDashboard() {
                             </div>
                             <div className="cd-cart-item-price">
                               <strong>₹{Number(item.price).toFixed(2)}</strong>{" "}
-                              / unit
+                              {item.unit === "kg" ? "/ kg" : "/ unit"}
                             </div>
                           </div>
                           <div className="cd-cart-qty">

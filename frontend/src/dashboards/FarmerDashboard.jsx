@@ -531,6 +531,11 @@ const NAV = [
 
 const rupee = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
+/* Display suffixes for the product selling unit ("kg" | "unit").
+   Legacy products saved before units existed have no unit field. */
+const unitSuffixOf = (u) => (u === "kg" ? "/kg" : u === "unit" ? "/unit" : "");
+const qtyUnitOf = (u) => (u === "kg" ? " kg" : u === "unit" ? " units" : "");
+
 const ratingOf = (id) => 3.8 + ((String(id).split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 11)) / 10;
 
 const STORE_CATEGORIES = ["Vegetables", "Fruits", "Grains", "Pulses", "Dairy", "Other"];
@@ -735,6 +740,7 @@ function FarmerDashboard() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [aiPriceLoading, setAiPriceLoading] = useState(false);
   const [aiPriceResult, setAiPriceResult] = useState(null);
+  const [productUnit, setProductUnit] = useState("kg");
 
   /* ---------- LOCATION ---------- */
 
@@ -1308,6 +1314,7 @@ function FarmerDashboard() {
         name: productName.trim(),
         category: productCategory,
         price: numericPrice,
+        unit: productUnit,
         quantity: numericQuantity,
         description: productDesc.trim(),
         imageUrl: productImg.trim(),
@@ -1324,6 +1331,7 @@ function FarmerDashboard() {
       }
 
       setProductName(""); setProductPrice(""); setProductQty(""); setProductDesc(""); setProductImg("");
+      setProductUnit("kg");
       setEditingId(null);
       setAiPriceResult(null);
       await refreshProducts();
@@ -1340,6 +1348,7 @@ function FarmerDashboard() {
     setProductName(p.name || "");
     setProductCategory(p.category || "Vegetables");
     setProductPrice(String(p.price || ""));
+    setProductUnit(p.unit || "kg");
     setProductQty(String(p.quantity || ""));
     setProductDesc(p.description || "");
     setProductImg(p.imageUrl || "");
@@ -1361,6 +1370,7 @@ function FarmerDashboard() {
         category: productCategory,
         price: productPrice,
         description: productDesc,
+        unit: productUnit,
       });
       setAiPriceResult(res);
       if (!res.matched && !res.aiText) {
@@ -1810,8 +1820,8 @@ function FarmerDashboard() {
         <div className="fd-pcard-brand">{p.category || "Agri Input"}</div>
         <div className="fd-pcard-name">{p.name}</div>
         <div className="fd-pcard-price">
-          {rupee(p.price)}
-          {Number(p.quantity) > 0 && <small> • {p.quantity} in stock</small>}
+          {rupee(p.price)}{unitSuffixOf(p.unit)}
+          {Number(p.quantity) > 0 && <small> • {p.quantity}{qtyUnitOf(p.unit)} in stock</small>}
         </div>
         <div className="fd-pcard-foot">
           <Stars value={ratingOf(p.id)} />
@@ -2347,8 +2357,8 @@ function FarmerDashboard() {
                 {p.imageUrl ? <img src={p.imageUrl} alt={p.name} /> : <span>{categoryIconOf(p.category)}</span>}
               </div>
               <div className="fd-list-title" style={{ marginTop: 10 }}>{p.name}</div>
-              <div className="fd-cmp-row"><span>Price</span><b>{rupee(p.price)}</b></div>
-              <div className="fd-cmp-row"><span>Stock</span><b>{p.quantity || 0}</b></div>
+              <div className="fd-cmp-row"><span>Price</span><b>{rupee(p.price)}{unitSuffixOf(p.unit)}</b></div>
+              <div className="fd-cmp-row"><span>Stock</span><b>{p.quantity || 0}{qtyUnitOf(p.unit)}</b></div>
               <div className="fd-cmp-row"><span>Category</span><b>{p.category || "—"}</b></div>
               <div className="fd-cmp-row"><span>Rating</span><b>{ratingOf(p.id).toFixed(1)} ★</b></div>
               <div className="fd-actions" style={{ marginTop: 12 }}>
@@ -2631,6 +2641,7 @@ function FarmerDashboard() {
             <button className="fd-link-btn" onClick={() => {
               setEditingId(null);
               setProductName(""); setProductPrice(""); setProductQty(""); setProductDesc(""); setProductImg("");
+              setProductUnit("kg");
               setAiPriceResult(null);
             }}>
               Cancel editing
@@ -2649,17 +2660,27 @@ function FarmerDashboard() {
             </select>
           </div>
           <div>
-            <label>Price (₹ per unit)</label>
+            <label>Price (₹)</label>
             <div className="fd-price-wrap">
               <input type="number" min="0" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="e.g. 40" />
+              <select value={productUnit} onChange={(e) => setProductUnit(e.target.value)} title="What does this price mean?">
+                <option value="kg">₹ / kg</option>
+                <option value="unit">₹ / unit</option>
+              </select>
               <button type="button" className="fd-ai-btn" onClick={runFairPriceAI} disabled={aiPriceLoading} title="AI suggests a fair price from live mandi rates">
                 {aiPriceLoading ? "…" : "✨ AI"}
               </button>
             </div>
           </div>
           <div>
-            <label>Quantity (units)</label>
-            <input type="number" min="0" value={productQty} onChange={(e) => setProductQty(e.target.value)} placeholder="e.g. 100" />
+            <label>Quantity</label>
+            <div className="fd-price-wrap">
+              <input type="number" min="0" value={productQty} onChange={(e) => setProductQty(e.target.value)} placeholder="e.g. 100" />
+              <select value={productUnit} onChange={(e) => setProductUnit(e.target.value)} title="Quantity unit">
+                <option value="kg">kg</option>
+                <option value="unit">units</option>
+              </select>
+            </div>
           </div>
           <div className="full">
             <label>Description</label>
@@ -2689,21 +2710,27 @@ function FarmerDashboard() {
                       <div className="fd-ai-mandi">
                         <span>🏛️ Mandi: <b>₹{aiPriceResult.mandiQuintal}/q</b> (₹{aiPriceResult.mandiKg}/kg)</span>
                         <span>{aiPriceResult.trendPct >= 0 ? "📈" : "📉"} 6-mo: <b>{aiPriceResult.trendPct >= 0 ? "+" : ""}{aiPriceResult.trendPct.toFixed(1)}%</b></span>
-                        <span className={`fd-chip ${aiPriceResult.advice === "high" ? "blue" : aiPriceResult.advice === "low" ? "amber" : "green"}`}>
-                          {aiPriceResult.advice === "high" ? "Your price is above market" : aiPriceResult.advice === "low" ? "Your price is below market" : "No price set yet"}
-                        </span>
+                        {aiPriceResult.unit === "kg" ? (
+                          <span className={`fd-chip ${aiPriceResult.advice === "high" ? "blue" : aiPriceResult.advice === "low" ? "amber" : "green"}`}>
+                            {aiPriceResult.advice === "high" ? "Your price is above market" : aiPriceResult.advice === "low" ? "Your price is below market" : "No price set yet"}
+                          </span>
+                        ) : (
+                          <span className="fd-chip gray">₹/kg reference · you sell per unit</span>
+                        )}
                       </div>
-                      <div className="fd-ai-picks">
-                        <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.budget)}>
-                          ₹{aiPriceResult.budget} <small>Budget · quick sale</small>
-                        </button>
-                        <button type="button" className="fd-ai-pick main" onClick={() => applyAiPrice(aiPriceResult.fair)}>
-                          ₹{aiPriceResult.fair} <small>⭐ Fair · recommended</small>
-                        </button>
-                        <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.premium)}>
-                          ₹{aiPriceResult.premium} <small>Premium · top quality</small>
-                        </button>
-                      </div>
+                      {aiPriceResult.unit === "kg" && (
+                        <div className="fd-ai-picks">
+                          <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.budget)}>
+                            ₹{aiPriceResult.budget}/kg <small>Budget · quick sale</small>
+                          </button>
+                          <button type="button" className="fd-ai-pick main" onClick={() => applyAiPrice(aiPriceResult.fair)}>
+                            ₹{aiPriceResult.fair}/kg <small>⭐ Fair · recommended</small>
+                          </button>
+                          <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.premium)}>
+                            ₹{aiPriceResult.premium}/kg <small>Premium · top quality</small>
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div>
@@ -2738,7 +2765,7 @@ function FarmerDashboard() {
         {myProducts.map((p) => {
           if (!p) return null;
           const chip = p.inStock ? { label: "In Stock", cls: "green" } : { label: "Out of Stock", cls: "red" };
-          const fair = evaluatePrice(p.name, p.category, p.price);
+          const fair = evaluatePrice(p.name, p.category, p.price, p.unit);
           return (
             <div className="fd-list-row" key={p.id}>
               <div className="fd-mini-art">
@@ -2746,13 +2773,13 @@ function FarmerDashboard() {
               </div>
               <div className="fd-list-main">
                 <div className="fd-list-title">{p.name}</div>
-                <div className="fd-list-sub">{p.category} • {rupee(p.price)} • Qty: {p.quantity} • {fmtDate(p.createdAt?.seconds)}</div>
+                <div className="fd-list-sub">{p.category} • {rupee(p.price)}{unitSuffixOf(p.unit)} • Qty: {p.quantity}{qtyUnitOf(p.unit)} • {fmtDate(p.createdAt?.seconds)}</div>
               </div>
               <span className={`fd-chip ${chip.cls}`}>{chip.label}</span>
               {fair && (
                 <span
                   className={`fd-chip ${fair.cls}`}
-                  title={`AI fair price ≈ ₹${fair.fair}/unit • mandi ₹${fair.mandiKg}/kg`}
+                  title={`AI fair price ≈ ₹${fair.fair}/kg • mandi ₹${fair.mandiKg}/kg`}
                   style={{ cursor: "default" }}
                 >
                   ✨ {fair.label}
@@ -2814,7 +2841,7 @@ function FarmerDashboard() {
               <div className="fd-list-main">
                 <div className="fd-list-title">{o.productName || "Produce order"} • {rupee(o.totalAmount || Number(o.price) * Number(o.quantity))}</div>
                 <div className="fd-list-sub">
-                  {o.consumerName || "Consumer"} ({o.consumerPhone || "no phone"}) • Qty: {o.quantity ?? (o.itemCount ? `${o.itemCount} item(s)` : "—")}
+                  {o.consumerName || "Consumer"} ({o.consumerPhone || "no phone"}) • Qty: {o.quantity ?? (o.itemCount ? `${o.itemCount} item(s)` : "—")}{o.unit === "kg" ? " kg" : ""}
                   {tripKm != null && <span> • 📏 {tripKm} km to consumer</span>}
                 </div>
                 <div className="fd-list-sub">
