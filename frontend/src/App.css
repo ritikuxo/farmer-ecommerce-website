@@ -1,0 +1,540 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* =====================================
+   HOME PAGE
+===================================== */
+
+.efarm-home {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 650px;
+  overflow: hidden;
+  background: #e9f5e3;
+}
+
+
+/* =====================================
+   BACKGROUND IMAGE
+===================================== */
+
+.home-background {
+  position: absolute;
+  inset: 0;
+
+  /*
+    IMPORTANT:
+    Put your generated E-Farm image here:
+    
+    frontend/
+      public/
+        efarm-hero.png
+  */
+
+  background-image: url("/efarm-hero.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  transform: scale(1.02);
+}
+
+
+/* =====================================
+   OVERLAY
+===================================== */
+
+.home-overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.18)
+    );
+
+  z-index: 1;
+}
+
+
+/* =====================================
+   HOME CONTENT
+===================================== */
+
+.home-content {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  padding-top: 55px;
+}
+
+
+/* =====================================
+   LOGO
+===================================== */
+
+.efarm-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #075b31;
+
+  text-shadow:
+    0 2px 5px rgba(255, 255, 255, 0.9);
+}
+
+.logo-symbol {
+  font-size: 42px;
+}
+
+.logo-name {
+  font-size: 31px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.logo-tagline {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+
+/* =====================================
+   TITLE
+===================================== */
+
+.home-content h1 {
+  margin: 45px 0 10px;
+
+  font-size: clamp(52px, 5.5vw, 92px);
+
+  line-height: 0.95;
+
+  font-weight: 950;
+
+  letter-spacing: 2px;
+
+  color: #075b31;
+
+  text-shadow:
+    0 5px 0 rgba(255, 255, 255, 0.8),
+    0 8px 15px rgba(0, 50, 20, 0.2);
+}
+
+.home-content h1 span {
+  font-weight: 950;
+}
+
+
+/* =====================================
+   SUBTITLE
+===================================== */
+
+.main-subtitle {
+  margin: 15px 0 25px;
+
+  font-size: clamp(17px, 1.5vw, 25px);
+
+  font-weight: 700;
+
+  color: #073f25;
+
+  text-shadow:
+    0 2px 5px rgba(255, 255, 255, 0.8);
+}
+
+
+/* =====================================
+   FEATURE BOX
+===================================== */
+
+.feature-box {
+  display: flex;
+  align-items: center;
+
+  padding: 14px 25px;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 15px 35px rgba(0, 70, 30, 0.18);
+
+  backdrop-filter: blur(10px);
+}
+
+
+/* FEATURE */
+
+.feature {
+  min-width: 145px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+}
+
+.feature-icon {
+  font-size: 31px;
+}
+
+.feature strong {
+  display: block;
+
+  color: #064c2a;
+
+  font-size: 15px;
+}
+
+.feature span {
+  display: block;
+
+  color: #285b3d;
+
+  font-size: 12px;
+
+  margin-top: 3px;
+}
+
+
+/* DIVIDER */
+
+.feature-line {
+  width: 1px;
+  height: 45px;
+
+  background: #b8cdbd;
+}
+
+
+/* =====================================
+   ENTER BUTTON
+===================================== */
+
+.enter-button {
+  margin-top: 32px;
+
+  border: none;
+
+  padding: 17px 35px;
+
+  border-radius: 40px;
+
+  background: linear-gradient(
+    135deg,
+    #096b34,
+    #159447
+  );
+
+  color: white;
+
+  font-size: 17px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.5px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 25px rgba(0, 90, 40, 0.35);
+
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  transition: 0.25s;
+}
+
+.enter-button span {
+  font-size: 25px;
+}
+
+
+/* =====================================
+   BOTTOM BAR
+===================================== */
+
+.bottom-bar {
+  position: absolute;
+
+  bottom: 22px;
+
+  padding: 10px 25px;
+
+  border-radius: 30px;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  color: #075b31;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 8px 25px rgba(0, 60, 30, 0.16);
+}
+
+.bottom-bar b {
+  margin: 0 15px;
+}
+
+
+/* =====================================
+   ROLE PAGE
+===================================== */
+
+.roles-page {
+  width: 100%;
+  min-height: 100vh;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eaf7e6,
+      #f7fbf5
+    );
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 40px 20px;
+}
+
+
+.roles-container {
+  width: 100%;
+  max-width: 1050px;
+
+  text-align: center;
+}
+
+
+.roles-logo {
+  font-size: 34px;
+
+  font-weight: 900;
+
+  color: #075b31;
+
+  margin-bottom: 20px;
+}
+
+.roles-logo span {
+  letter-spacing: 2px;
+}
+
+
+.roles-container h1 {
+  margin: 10px 0;
+
+  color: #075b31;
+
+  font-size: 45px;
+}
+
+
+.roles-container > p {
+  color: #52705d;
+
+  font-size: 18px;
+
+  margin-bottom: 40px;
+}
+
+
+/* =====================================
+   ROLE GRID
+===================================== */
+
+.roles-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 20px;
+}
+
+
+.role-card {
+  border: none;
+
+  padding: 30px 20px;
+
+  min-height: 250px;
+
+  border-radius: 24px;
+
+  background: white;
+
+  box-shadow:
+    0 12px 35px rgba(0, 80, 40, 0.12);
+
+  cursor: pointer;
+
+  transition: 0.3s;
+
+  color: #064c2a;
+}
+
+
+.role-card:hover {
+  box-shadow:
+    0 20px 45px rgba(0, 80, 40, 0.2);
+}
+
+
+.role-icon {
+  font-size: 55px;
+
+  margin-bottom: 15px;
+}
+
+
+.role-card h2 {
+  margin: 10px 0;
+
+  font-size: 22px;
+}
+
+
+.role-card p {
+  color: #687d70;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  min-height: 42px;
+}
+
+
+.role-continue {
+  display: inline-block;
+
+  margin-top: 15px;
+
+  color: #12833f;
+
+  font-weight: 800;
+}
+
+
+/* =====================================
+   BACK BUTTON
+===================================== */
+
+.back-home {
+  margin-top: 35px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #075b31;
+
+  font-size: 16px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =====================================
+   RESPONSIVE
+===================================== */
+
+@media (max-width: 900px) {
+
+  .roles-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .feature {
+    min-width: 120px;
+  }
+
+}
+
+
+@media (max-width: 650px) {
+
+  .home-content {
+    padding-top: 35px;
+  }
+
+  .home-content h1 {
+    font-size: 48px;
+    margin-top: 35px;
+  }
+
+  .feature-box {
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    max-width: 90%;
+
+    gap: 10px;
+  }
+
+  .feature-line {
+    display: none;
+  }
+
+  .feature {
+    min-width: 120px;
+  }
+
+  .bottom-bar {
+    font-size: 11px;
+  }
+
+  .bottom-bar b {
+    margin: 0 5px;
+  }
+
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
+
+}

@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// =========================================================
+//  E-FARM FIRESTORE RULES  (simple / demo mode)
+//
+//  Every signed-in user (farmer / consumer / delivery /
+//  admin) can read and write the app's collections.
+//  Anonymous (logged-out) access is blocked.
+//
+//  NOTE: this intentionally trusts logged-in users, which
+//  matches this demo app's client-side role routing.
+//  For a hardened role-based version see
+//  firestore.rules.secure  (paste it later if you want
+//  per-role restrictions - the app already supports it).
+// =========================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // App collections used by the dashboards
+    match /users/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /products/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /orders/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /inputOrders/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Any other collection stays locked
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

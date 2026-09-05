@@ -1,0 +1,410 @@
+/* =========================================
+   E-FARM REGISTER PAGE
+   Scoped under .register-page so these
+   rules win over the shared auth-* styles
+   defined in index.css.
+========================================= */
+
+.register-page {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+
+  overflow: hidden;
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 40px 20px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   BACKGROUND IMAGE
+========================================= */
+
+.register-bg {
+  position: absolute;
+  inset: 0;
+
+  background-image: url("/efarm-hero.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+
+/* =========================================
+   LIGHT OVERLAY
+========================================= */
+
+.register-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(244, 250, 240, 0.30) 45%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+
+/* =========================================
+   DECORATIVE LEAVES
+========================================= */
+
+.register-leaf {
+  position: absolute;
+
+  z-index: 1;
+
+  pointer-events: none;
+  user-select: none;
+
+  opacity: 0.55;
+
+  filter: blur(0.5px);
+
+  text-shadow: 0 6px 14px rgba(0, 60, 20, 0.25);
+}
+
+.register-leaf-1 {
+  top: -30px;
+  left: -25px;
+
+  font-size: 150px;
+
+  transform: rotate(140deg);
+}
+
+.register-leaf-2 {
+  top: 45px;
+  left: 55px;
+
+  font-size: 90px;
+
+  transform: rotate(185deg);
+
+  opacity: 0.4;
+}
+
+.register-leaf-3 {
+  top: -40px;
+  right: -15px;
+
+  font-size: 160px;
+
+  transform: rotate(200deg);
+}
+
+.register-leaf-4 {
+  top: 65px;
+  right: 75px;
+
+  font-size: 80px;
+
+  transform: rotate(160deg);
+
+  opacity: 0.4;
+}
+
+
+/* =========================================
+   CONTENT WRAPPER
+========================================= */
+
+.register-content {
+  position: relative;
+
+  z-index: 2;
+
+  width: 100%;
+  max-width: 480px;
+}
+
+
+/* =========================================
+   CARD
+========================================= */
+
+.register-page .auth-card {
+  width: 100%;
+
+  background: rgba(255, 255, 255, 0.94);
+
+  border-radius: 26px;
+
+  padding: 42px 34px;
+
+  box-shadow: 0 22px 55px rgba(15, 60, 30, 0.16);
+
+  backdrop-filter: blur(6px);
+
+  text-align: center;
+
+  position: relative;
+}
+
+.register-page .auth-back {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+
+  border: none;
+  background: transparent;
+
+  color: #14532d;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.register-page .auth-back:hover {
+  color: #0d3b1e;
+}
+
+.register-page .auth-icon {
+  font-size: 54px;
+
+  margin-bottom: 10px;
+}
+
+.register-page .auth-brand {
+  color: #14532d;
+
+  font-size: 19px;
+  font-weight: 900;
+
+  letter-spacing: 3px;
+
+  margin-bottom: 18px;
+}
+
+.register-page .auth-card h1 {
+  color: #123f22;
+
+  font-size: 27px;
+  font-weight: 900;
+
+  margin-bottom: 10px;
+}
+
+.register-page .auth-description {
+  color: #5c6b5f;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  margin-bottom: 25px;
+}
+
+
+/* =========================================
+   ERROR BOX
+========================================= */
+
+.register-page .auth-error {
+  background: #fff0f0;
+
+  color: #b42318;
+
+  border: 1px solid #f3c2c2;
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  margin-bottom: 18px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* =========================================
+   FORM
+========================================= */
+
+.register-page .auth-card form {
+  display: flex;
+  flex-direction: column;
+
+  text-align: left;
+}
+
+.register-page .auth-card label {
+  color: #244b31;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  margin-bottom: 7px;
+}
+
+.register-page .auth-card input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 14px 15px;
+
+  margin-bottom: 17px;
+
+  border: 1px solid #d5dfd3;
+
+  border-radius: 12px;
+
+  font-size: 15px;
+  font-family: inherit;
+
+  outline: none;
+
+  background: #fbfdfb;
+
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.register-page .auth-card input:focus {
+  border-color: #1e6b3a;
+
+  box-shadow: 0 0 0 3px rgba(30, 107, 58, 0.12);
+}
+
+
+/* =========================================
+   SUBMIT BUTTON
+========================================= */
+
+.register-page .auth-submit {
+  width: 100%;
+
+  border: none;
+
+  padding: 15px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, #17552f, #1e6b3a);
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+
+  cursor: pointer;
+
+  box-shadow: 0 10px 20px rgba(20, 70, 35, 0.25);
+
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.register-page .auth-submit:hover {
+  background: linear-gradient(135deg, #114525, #17552f);
+
+  transform: translateY(-2px);
+}
+
+.register-page .auth-submit:disabled {
+  opacity: 0.7;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* =========================================
+   LOGIN LINK
+========================================= */
+
+.register-page .login-text {
+  color: #5c6b5f;
+
+  font-size: 14px;
+
+  margin: 22px 0 10px;
+}
+
+.register-page .register-button {
+  width: 100%;
+
+  padding: 13px;
+
+  border-radius: 12px;
+
+  border: 1px solid #1e6b3a;
+
+  background: #ffffff;
+
+  color: #14532d;
+
+  font-family: inherit;
+
+  font-size: 14.5px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: background 0.25s ease;
+}
+
+.register-page .register-button:hover {
+  background: #eaf6e4;
+}
+
+.register-page .register-button:disabled,
+.register-page .auth-back:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1050px) {
+
+  .register-leaf {
+    display: none;
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 620px) {
+
+  .register-page {
+    padding: 30px 16px;
+  }
+
+  .register-page .auth-card {
+    padding: 38px 22px;
+  }
+
+  .register-page .auth-card h1 {
+    font-size: 24px;
+  }
+
+}

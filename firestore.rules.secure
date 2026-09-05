@@ -1,0 +1,166 @@
+rules_version = '2';
+
+// =========================================================
+//  E-FARM FIRESTORE SECURITY RULES
+//
+//  Roles come from each user's own document:
+//    users/{uid}.role  ->  'farmer' | 'consumer' | 'delivery' | 'admin'
+//
+//  Collections:
+//    users       - profiles, approval status, suspension
+//    products    - farmer produce listings
+//    orders      - consumer produce orders (consumer -> farmer -> delivery)
+//    inputOrders - farmer agri-input purchases
+// =========================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------------- HELPERS ---------------- */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isRole(r) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == r;
+    }
+
+    /* ---------------- USERS ---------------- */
+
+    match /users/{userId} {
+      // Any signed-in user may read profiles (farmer location
+      // enrichment, login profile load, admin panel listing).
+      allow get, list: if signedIn();
+
+      // Registration / profile creation - own doc only.
+      allow create: if signedIn() && request.auth.uid == userId;
+
+      // Own profile edits (location, address...) - but a user can
+      // NEVER approve/suspend themselves or change their own role.
+      // Admins can update anyone (approve / reject / suspend).
+      allow update: if signedIn() && (
+        isAdmin()
+        || (
+          request.auth.uid == userId
+          && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['status', 'role', 'suspendedUntil', 'suspensionDays'])
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    /* ---------------- PRODUCTS ---------------- */
+
+    match /products/{productId} {
+      // Marketplace is visible to every signed-in user.
+      allow read: if signedIn();
+
+      // Only farmers can list produce, and only under their own id.
+      allow create: if signedIn()
+        && request.resource.data.farmerId == request.auth.uid;
+
+      // Only the owning farmer can edit / remove their listing.
+      allow update, delete: if signedIn()
+        && resource.data.farmerId == request.auth.uid;
+    }
+
+    /* ---------------- ORDERS ---------------- */
+
+    match /orders/{orderId} {
+      // Consumers read their orders, farmers read orders for their
+      // produce, delivery partners browse all available orders.
+      allow read: if signedIn();
+
+      // Only the consumer creates an order for themselves.
+      allow create: if signedIn()
+        && request.resource.data.consumerId == request.auth.uid;
+
+      allow update: if signedIn() && (
+        /* 1. CONSUMER (own order) */
+        resource.data.consumerId == request.auth.uid
+
+        /* 2. FARMER (own produce): accept / reject / mark delivered
+              + contact + location enrichment.
+              Cart orders are ONE shared document for every farmer
+              involved — they carry a farmerIds[] array instead of
+              a single farmerId, so participating farmers match
+              via request.auth.uid in resource.data.farmerIds.  */
+        || (
+          (resource.data.farmerId == request.auth.uid
+           || (resource.data.farmerIds != null
+               && request.auth.uid in resource.data.farmerIds))
+          && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly([
+                  'status', 'farmerResponseAt',
+                  'farmerName', 'farmerPhone', 'farmerLocation'
+                ])
+        )
+
+        /* 3. DELIVERY PARTNER: claim an unassigned order, then
+              mark it delivered (this fixes the "Accept Order"
+              permission error). Also stores the partner's
+              earnings (charge + commission) - see
+              frontend/src/dashboards/deliveryEarnings.js      */
+        || (
+          isRole('delivery')
+          && (resource.data.deliveryPersonId == null
+              || resource.data.deliveryPersonId == request.auth.uid)
+          && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly([
+                  'deliveryStatus', 'deliveryPersonId',
+                  'deliveryPersonEmail', 'deliveryPersonName',
+                  'acceptedAt', 'deliveredAt',
+                  'orderStatus', 'status',
+                  'deliveryCompleted', 'paymentStatus',
+                  'paymentCompleted', 'paymentCompletedAt',
+                  'deliveryCharge', 'deliveryDistanceKm',
+                  'deliveryCommission', 'deliveryEarning',
+                  'deliveryEarningBreakdown',
+                  'deliveryEarningStatus', 'deliveryEarningAt'
+                ])
+        )
+
+        || isAdmin()
+      );
+
+      // History cleanup by the buyer or any farmer on the order.
+      allow delete: if signedIn() && (
+        resource.data.consumerId == request.auth.uid
+        || resource.data.farmerId == request.auth.uid
+        || (resource.data.farmerIds != null
+            && request.auth.uid in resource.data.farmerIds)
+      );
+    }
+
+    /* ---------------- INPUT ORDERS ---------------- */
+    // Farmers buying agri-inputs from the marketplace.
+
+    match /inputOrders/{orderId} {
+      allow read: if signedIn()
+        && resource.data.buyerId == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.buyerId == request.auth.uid;
+
+      allow update, delete: if signedIn()
+        && resource.data.buyerId == request.auth.uid;
+    }
+
+    /* ---------------- EVERYTHING ELSE ---------------- */
+    // Unknown collections stay locked.
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

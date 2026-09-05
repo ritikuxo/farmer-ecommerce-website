@@ -1,0 +1,452 @@
+/* =========================================
+   E-FARM ROLE SELECTION PAGE
+========================================= */
+
+.roles-page {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+
+  overflow: hidden;
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* =========================================
+   BACKGROUND IMAGE
+========================================= */
+
+.roles-bg {
+  position: absolute;
+  inset: 0;
+
+  background-image: url("/efarm-roles.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+
+/* =========================================
+   LIGHT OVERLAY
+========================================= */
+
+.roles-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(244, 250, 240, 0.30) 45%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+
+/* =========================================
+   DECORATIVE LEAVES
+========================================= */
+
+.leaf {
+  position: absolute;
+
+  z-index: 1;
+
+  pointer-events: none;
+  user-select: none;
+
+  opacity: 0.55;
+
+  filter: blur(0.5px);
+
+  text-shadow: 0 6px 14px rgba(0, 60, 20, 0.25);
+}
+
+.leaf-1 {
+  top: -30px;
+  left: -25px;
+
+  font-size: 150px;
+
+  transform: rotate(140deg);
+}
+
+.leaf-2 {
+  top: 45px;
+  left: 55px;
+
+  font-size: 90px;
+
+  transform: rotate(185deg);
+
+  opacity: 0.4;
+}
+
+.leaf-3 {
+  top: -40px;
+  right: -15px;
+
+  font-size: 160px;
+
+  transform: rotate(200deg);
+}
+
+.leaf-4 {
+  top: 65px;
+  right: 75px;
+
+  font-size: 80px;
+
+  transform: rotate(160deg);
+
+  opacity: 0.4;
+}
+
+
+/* =========================================
+   CONTENT
+========================================= */
+
+.roles-content {
+  position: relative;
+
+  z-index: 2;
+
+  width: 100%;
+  max-width: 1240px;
+
+  margin: 0 auto;
+
+  padding: 48px 24px 55px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   LOGO
+========================================= */
+
+.roles-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  margin-bottom: 18px;
+
+  color: #14532d;
+
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 3px;
+
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.8);
+}
+
+.roles-logo-icon {
+  font-size: 28px;
+
+  line-height: 1;
+}
+
+
+/* =========================================
+   HEADING
+========================================= */
+
+.roles-content h1 {
+  margin: 0;
+
+  color: #14532d;
+
+  font-size: clamp(42px, 5.5vw, 66px);
+  font-weight: 900;
+  letter-spacing: 1px;
+
+  text-shadow: 0 3px 14px rgba(255, 255, 255, 0.65);
+}
+
+
+/* =========================================
+   SUBTITLE
+========================================= */
+
+.roles-subtitle {
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  color: #4f6153;
+
+  font-size: 17px;
+  font-weight: 600;
+
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.8);
+}
+
+.subtitle-arrow {
+  color: #8dc26f;
+
+  font-size: 22px;
+  font-weight: 700;
+}
+
+
+/* =========================================
+   CARDS GRID
+========================================= */
+
+.roles-grid {
+  margin-top: 42px;
+
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 22px;
+}
+
+
+/* =========================================
+   ROLE CARD
+========================================= */
+
+.roles-card {
+  border: none;
+
+  font-family: inherit;
+
+  width: 100%;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border-radius: 22px;
+
+  padding: 26px 20px 28px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  cursor: pointer;
+
+  box-shadow: 0 18px 40px rgba(15, 60, 30, 0.14);
+
+  backdrop-filter: blur(6px);
+
+  transition: box-shadow 0.3s ease;
+}
+
+.roles-card:hover {
+  box-shadow: 0 26px 55px rgba(15, 60, 30, 0.20);
+}
+
+
+/* Small badge circle at the top of each card */
+
+.role-badge {
+  width: 46px;
+  height: 46px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 21px;
+  line-height: 1;
+
+  border-radius: 50%;
+
+  background: #eaf6e4;
+
+  border: 1px solid rgba(30, 90, 40, 0.10);
+}
+
+
+/* Big illustration circle */
+
+.role-art {
+  margin-top: 14px;
+
+  width: 148px;
+  height: 148px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 84px;
+  line-height: 1;
+
+  border-radius: 50%;
+
+  background: radial-gradient(
+    circle at 50% 42%,
+    #ffffff 0%,
+    #f2f8ef 55%,
+    rgba(219, 238, 213, 0.65) 100%
+  );
+}
+
+
+/* Card title */
+
+.role-title {
+  margin-top: 16px;
+
+  color: #123f22;
+
+  font-size: 22px;
+  font-weight: 900;
+}
+
+
+/* Card description */
+
+.role-desc {
+  flex-grow: 1;
+
+  margin-top: 9px;
+
+  color: #5c6b5f;
+
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+
+/* Continue pill button */
+
+.role-continue {
+  margin-top: 18px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 11px 26px;
+
+  border-radius: 999px;
+
+  background: linear-gradient(135deg, #17552f, #1e6b3a);
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+
+  box-shadow: 0 10px 20px rgba(20, 70, 35, 0.25);
+
+  transition: background 0.25s ease;
+}
+
+.roles-card:hover .role-continue {
+  background: linear-gradient(135deg, #114525, #17552f);
+}
+
+
+/* =========================================
+   BACK BUTTON
+========================================= */
+
+.roles-back {
+  margin-top: 42px;
+
+  border: none;
+
+  font-family: inherit;
+
+  padding: 13px 30px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  color: #14532d;
+
+  font-size: 15px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow: 0 12px 26px rgba(15, 60, 30, 0.16);
+
+  transition: background 0.25s ease;
+}
+
+.roles-back:hover {
+  background: #ffffff;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1050px) {
+
+  .roles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .leaf {
+    display: none;
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 620px) {
+
+  .roles-content {
+    padding: 36px 16px 45px;
+  }
+
+  .roles-content h1 {
+    font-size: 40px;
+  }
+
+  .roles-subtitle {
+    font-size: 15px;
+
+    gap: 8px;
+  }
+
+  .roles-grid {
+    grid-template-columns: 1fr;
+
+    margin-top: 32px;
+  }
+
+  .role-desc {
+    flex-grow: 0;
+  }
+
+  .roles-back {
+    margin-top: 32px;
+  }
+
+}
