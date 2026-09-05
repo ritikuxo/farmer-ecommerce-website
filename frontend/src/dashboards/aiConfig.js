@@ -1,4 +1,4 @@
-Z // ============================================================
+// ============================================================
 //  E-FARM AI — PROVIDER CONFIGURATION
 //
 //  EASIEST: no file editing needed! The AI Crop Assistant page

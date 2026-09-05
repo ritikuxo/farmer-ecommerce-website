@@ -1,0 +1,21 @@
+# Render Blueprint — deploys E-Farm as a static site (frontend only).
+# Render reads this file when you connect the repo via "New +" → "Blueprint".
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: e-farm
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    # SPA fallback: serve index.html for any route so client-side
+    # routing (React Router) works on hard refresh / direct links.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # Pin Node for the build (Vite requires Node >= 20.19)
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
