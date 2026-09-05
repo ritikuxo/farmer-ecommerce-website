@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
+  orderBy,
   query,
+  serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -596,6 +600,118 @@ function AdminDashboard() {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
+
+  // =====================================================
+  // SUPPORT INBOX + COMPLAINTS (live listeners)
+  // =====================================================
+
+  const [threads, setThreads] = useState([]);
+  const [openThreadId, setOpenThreadId] = useState("");
+  const [threadMsgs, setThreadMsgs] = useState([]);
+  const [adminReply, setAdminReply] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [complaints, setComplaints] = useState([]);
+  const [noteEdits, setNoteEdits] = useState({});
+
+  useEffect(() => {
+    const unsubT = onSnapshot(
+      collection(db, "supportThreads"),
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        list.sort(
+          (a, b) => (b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0)
+        );
+        setThreads(list);
+      },
+      (err) => console.error("supportThreads listener:", err)
+    );
+    const unsubC = onSnapshot(
+      collection(db, "complaints"),
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        list.sort(
+          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+        );
+        setComplaints(list);
+      },
+      (err) => console.error("complaints listener:", err)
+    );
+    return () => {
+      unsubT();
+      unsubC();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!openThreadId) {
+      setThreadMsgs([]);
+      return undefined;
+    }
+    return onSnapshot(
+      query(
+        collection(db, "supportThreads", openThreadId, "messages"),
+        orderBy("createdAt", "asc")
+      ),
+      (snap) => setThreadMsgs(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
+  }, [openThreadId]);
+
+  const sendAdminReply = async () => {
+    const text = adminReply.trim();
+    if (!text || !openThreadId || sendingReply) return;
+    setSendingReply(true);
+    try {
+      await addDoc(collection(db, "supportThreads", openThreadId, "messages"), {
+        sender: "admin",
+        name: "Admin",
+        text,
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "supportThreads", openThreadId), {
+        lastMessage: text.slice(0, 200),
+        lastSender: "admin",
+        lastMessageAt: serverTimestamp(),
+      });
+      setAdminReply("");
+    } catch (error) {
+      console.error("Error sending admin reply:", error);
+      alert("Unable to send the reply. Check Firestore rules.");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const setThreadStatus = async (t, status) => {
+    try {
+      await updateDoc(doc(db, "supportThreads", t.id), { status });
+    } catch (error) {
+      console.error("Error updating thread:", error);
+    }
+  };
+
+  const updateComplaint = async (id, patch) => {
+    try {
+      await updateDoc(doc(db, "complaints", id), {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error updating complaint:", error);
+      alert("Unable to update the complaint.");
+    }
+  };
+
+  /* Jump to the All Users section pre-filtered by the accused
+     person's email/name so the admin can suspend them. */
+  const findComplainedUser = (term) => {
+    setSearchTerm(String(term || "").trim());
+    scrollTo("adm-users");
+  };
+
+  const openThread = threads.find((t) => t.id === openThreadId) || null;
+  const openThreads = threads.filter((t) => t.status !== "resolved");
+  const pendingComplaints = complaints.filter((c) => c.status === "pending");
+
   // =====================================================
   // STYLES
   // =====================================================
@@ -1319,6 +1435,275 @@ function AdminDashboard() {
         flex-direction: column;
       }
     }
+
+    /* ===== SUPPORT INBOX ===== */
+    .adm-sup-grid {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 14px;
+    }
+    .adm-sup-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    .adm-sup-thread {
+      text-align: left;
+      border: 1.5px solid #e3ece6;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border 0.15s ease, box-shadow 0.15s ease;
+    }
+    .adm-sup-thread:hover { border-color: #9cc7aa; }
+    .adm-sup-thread.on {
+      border-color: #166534;
+      box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+    }
+    .adm-sup-thread-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .adm-sup-name { font-weight: 800; font-size: 13px; color: #173423; }
+    .adm-sup-role {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: capitalize;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #e8f0ea;
+      color: #40614b;
+    }
+    .adm-sup-role.r-farmer { background: #dcfce7; color: #15803d; }
+    .adm-sup-role.r-consumer { background: #dbeafe; color: #1d4ed8; }
+    .adm-sup-role.r-delivery { background: #fef3c7; color: #b45309; }
+    .adm-sup-open {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 800;
+      color: #b91c1c;
+      background: #fee2e2;
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+    .adm-sup-res {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 800;
+      color: #15803d;
+      background: #dcfce7;
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+    .adm-sup-last {
+      font-size: 12px;
+      color: #43554a;
+      margin-top: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .adm-sup-meta { font-size: 10.5px; color: #8a968e; margin-top: 3px; }
+    .adm-sup-empty {
+      color: #8a968e;
+      font-size: 13px;
+      padding: 14px;
+      background: #f4f7f4;
+      border-radius: 12px;
+    }
+    .adm-sup-empty.tall {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .adm-sup-chat {
+      display: flex;
+      flex-direction: column;
+      border: 1.5px solid #e3ece6;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #ffffff;
+      height: 520px;
+    }
+    .adm-sup-chathead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: #f2f7f2;
+      border-bottom: 1px solid #e3ece6;
+      flex-wrap: wrap;
+    }
+    .adm-sup-msgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      background: #f8fbf7;
+    }
+    .adm-sup-msg { display: flex; }
+    .adm-sup-msg.them { justify-content: flex-start; }
+    .adm-sup-msg.me { justify-content: flex-end; }
+    .adm-sup-bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 13px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .adm-sup-msg.them .adm-sup-bubble {
+      background: #ffffff;
+      border: 1px solid #e0e9e2;
+      color: #1a2b21;
+      border-bottom-left-radius: 4px;
+    }
+    .adm-sup-msg.me .adm-sup-bubble {
+      background: #14532d;
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+    .adm-sup-flag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      color: #b45309;
+      background: #fef3c7;
+      border-radius: 6px;
+      padding: 2px 7px;
+      margin-bottom: 5px;
+    }
+    .adm-sup-msg.me .adm-sup-flag { background: rgba(255, 255, 255, 0.18); color: #ffffff; }
+    .adm-sup-time { font-size: 9.5px; opacity: 0.6; margin-top: 4px; text-align: right; }
+    .adm-sup-reply {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid #e3ece6;
+      background: #ffffff;
+    }
+    .adm-sup-reply input {
+      flex: 1;
+      min-width: 0;
+      border: 1.5px solid #d9e5da;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 12.5px;
+      font-family: inherit;
+      outline: none;
+    }
+    .adm-sup-reply input:focus { border-color: #166534; }
+    .adm-sup-reply button {
+      border: none;
+      border-radius: 10px;
+      background: #14532d;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 12.5px;
+      padding: 0 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .adm-sup-reply button:disabled { opacity: 0.5; cursor: default; }
+
+    /* ===== COMPLAINTS ===== */
+    .adm-complaint {
+      border: 1.5px solid #f3d9d9;
+      background: #fffafa;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .adm-complaint-head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+    .adm-complaint-head b { font-size: 14px; color: #3b1d1d; }
+    .adm-complaint-head select {
+      margin-left: auto;
+      border: 1.5px solid #e3caca;
+      border-radius: 9px;
+      padding: 6px 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      color: #5f3a3a;
+      background: #ffffff;
+      cursor: pointer;
+    }
+    .adm-complaint-desc {
+      margin: 10px 0;
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px dashed #e7c9c9;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #4a2f2f;
+      white-space: pre-wrap;
+    }
+    .adm-complaint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .adm-complaint-grid > div {
+      background: #f6efef;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: #4a3232;
+      word-break: break-word;
+    }
+    .adm-complaint-grid label {
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #9c7b7b;
+      margin-bottom: 2px;
+    }
+    .adm-complaint-note {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .adm-complaint-note input {
+      flex: 1;
+      min-width: 180px;
+      border: 1.5px solid #e3caca;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .adm-complaint-note input:focus { border-color: #b45309; }
+    .adm-complaint-note button {
+      border: none;
+      border-radius: 9px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .adm-complaint-note .save { background: #14532d; color: #ffffff; }
+    .adm-complaint-note .find { background: #e8f0ea; color: #2c5e40; }
+
+    @media (max-width: 860px) {
+      .adm-sup-grid { grid-template-columns: 1fr; }
+      .adm-sup-chat { height: 440px; }
+    }
   `;
   return (
     <>
@@ -1368,6 +1753,26 @@ function AdminDashboard() {
             >
               <span className="adm-nav-emoji">📈</span>
               <span className="adm-nav-text">Summary</span>
+            </button>
+
+            <button
+              type="button"
+              className="adm-nav-item"
+              onClick={() => scrollTo("adm-support")}
+            >
+              <span className="adm-nav-emoji">💬</span>
+              <span className="adm-nav-text">Support Inbox</span>
+              <span className="adm-count">{openThreads.length}</span>
+            </button>
+
+            <button
+              type="button"
+              className="adm-nav-item"
+              onClick={() => scrollTo("adm-complaints")}
+            >
+              <span className="adm-nav-emoji">⚠️</span>
+              <span className="adm-nav-text">Complaints</span>
+              <span className="adm-count">{pendingComplaints.length}</span>
             </button>
 
             <button
@@ -1775,6 +2180,228 @@ function AdminDashboard() {
                 <div className="adm-summary-value">{suspendedUsers.length}</div>
               </div>
             </div>
+          </section>
+
+          {/* ===== SUPPORT INBOX ===== */}
+          <section className="adm-section" id="adm-support">
+            <div className="adm-section-head">
+              <h2>💬 Support Inbox</h2>
+              <p>
+                Problems, opinions and complaints from farmers, consumers and
+                delivery partners. Select a conversation to read and reply.
+              </p>
+            </div>
+
+            <div className="adm-sup-grid">
+              <div className="adm-sup-list">
+                {threads.length === 0 && (
+                  <div className="adm-sup-empty">
+                    No support conversations yet. When a user opens the 💬 chat
+                    widget, their conversation appears here.
+                  </div>
+                )}
+                {threads.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={"adm-sup-thread" + (t.id === openThreadId ? " on" : "")}
+                    onClick={() => setOpenThreadId(t.id)}
+                  >
+                    <div className="adm-sup-thread-top">
+                      <span className="adm-sup-name">{t.userName || "User"}</span>
+                      <span className={"adm-sup-role r-" + (t.userRole || "user")}>
+                        {t.userRole || "user"}
+                      </span>
+                      {t.status === "resolved" ? (
+                        <span className="adm-sup-res">resolved</span>
+                      ) : (
+                        <span className="adm-sup-open">open</span>
+                      )}
+                    </div>
+                    <div className="adm-sup-last">
+                      {t.lastSender === "admin" ? "You: " : ""}
+                      {t.lastMessage || "No messages yet"}
+                    </div>
+                    <div className="adm-sup-meta">
+                      {t.userEmail || ""}
+                      {t.lastMessageAt?.seconds
+                        ? " • " +
+                          new Date(t.lastMessageAt.seconds * 1000).toLocaleString("en-IN", {
+                            day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                          })
+                        : ""}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="adm-sup-chat">
+                {!openThread ? (
+                  <div className="adm-sup-empty tall">
+                    Select a conversation from the left to read messages and
+                    reply as Admin. 💬
+                  </div>
+                ) : (
+                  <>
+                    <div className="adm-sup-chathead">
+                      <div>
+                        <div className="adm-sup-name">{openThread.userName}</div>
+                        <div className="adm-sup-meta">
+                          {openThread.userEmail || "no email"}
+                          {openThread.userPhone ? " • " + openThread.userPhone : ""}
+                          {" • "}
+                          {openThread.userRole || "user"}
+                        </div>
+                      </div>
+                      <div className="adm-sup-chathead-btns">
+                        {openThread.status !== "resolved" ? (
+                          <button
+                            type="button"
+                            className="adm-btn adm-btn-suspend"
+                            onClick={() => setThreadStatus(openThread, "resolved")}
+                          >
+                            ✓ Mark resolved
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="adm-btn adm-btn-approve"
+                            onClick={() => setThreadStatus(openThread, "open")}
+                          >
+                            ↺ Reopen
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="adm-sup-msgs">
+                      {threadMsgs.map((m) => (
+                        <div
+                          key={m.id}
+                          className={"adm-sup-msg " + (m.sender === "admin" ? "me" : "them")}
+                        >
+                          <div className="adm-sup-bubble">
+                            {m.complaint && <div className="adm-sup-flag">⚠️ Formal complaint</div>}
+                            {m.text}
+                            <div className="adm-sup-time">
+                              {m.createdAt?.seconds
+                                ? new Date(m.createdAt.seconds * 1000).toLocaleString("en-IN", {
+                                    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                                  })
+                                : ""}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {threadMsgs.length === 0 && (
+                        <div className="adm-sup-empty">No messages in this conversation.</div>
+                      )}
+                    </div>
+
+                    <div className="adm-sup-reply">
+                      <input
+                        value={adminReply}
+                        placeholder="Type your reply as Admin…"
+                        onChange={(e) => setAdminReply(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") sendAdminReply(); }}
+                      />
+                      <button
+                        type="button"
+                        onClick={sendAdminReply}
+                        disabled={sendingReply || !adminReply.trim()}
+                      >
+                        {sendingReply ? "…" : "Send ➤"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* ===== COMPLAINTS ===== */}
+          <section className="adm-section" id="adm-complaints">
+            <div className="adm-section-head">
+              <h2>⚠️ Complaints</h2>
+              <p>
+                Formal complaints filed against farmers or delivery partners —
+                with their email and mobile so you can identify and take action.
+              </p>
+            </div>
+
+            {complaints.length === 0 && (
+              <div className="adm-sup-empty">No complaints filed yet. 🎉</div>
+            )}
+
+            {complaints.map((c) => (
+              <div className="adm-complaint" key={c.id}>
+                <div className="adm-complaint-head">
+                  <span className={"adm-sup-role r-" + (c.againstType === "delivery" ? "delivery" : "farmer")}>
+                    {c.againstType === "delivery" ? "🚚 Delivery Partner" : "👨‍🌾 Farmer"}
+                  </span>
+                  <b>{c.againstName}</b>
+                  <select
+                    value={c.status || "pending"}
+                    onChange={(e) => updateComplaint(c.id, { status: e.target.value })}
+                  >
+                    <option value="pending">⏳ Pending</option>
+                    <option value="reviewing">🔍 Reviewing</option>
+                    <option value="resolved">✅ Resolved</option>
+                  </select>
+                </div>
+
+                <div className="adm-complaint-desc">{c.description}</div>
+
+                <div className="adm-complaint-grid">
+                  <div>
+                    <label>Complaint by</label>
+                    {c.filedByName || "—"} ({c.filedByRole || "user"})
+                    <br />
+                    {c.filedByEmail || ""}
+                  </div>
+                  <div>
+                    <label>Against — email</label>
+                    {c.againstEmail || "—"}
+                  </div>
+                  <div>
+                    <label>Against — mobile</label>
+                    {c.againstPhone || "—"}
+                  </div>
+                  <div>
+                    <label>Order ref</label>
+                    {c.orderRef || "—"}
+                  </div>
+                </div>
+
+                <div className="adm-complaint-note">
+                  <input
+                    placeholder="Admin note / action taken…"
+                    value={noteEdits[c.id] ?? c.adminNote ?? ""}
+                    onChange={(e) =>
+                      setNoteEdits((prev) => ({ ...prev, [c.id]: e.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="save"
+                    onClick={() =>
+                      updateComplaint(c.id, {
+                        adminNote: noteEdits[c.id] ?? c.adminNote ?? "",
+                      })
+                    }
+                  >
+                    💾 Save note
+                  </button>
+                  <button
+                    type="button"
+                    className="find"
+                    onClick={() => findComplainedUser(c.againstEmail || c.againstName)}
+                  >
+                    🔎 Find in Users
+                  </button>
+                </div>
+              </div>
+            ))}
           </section>
 
           {/* ===== REFRESH ===== */}

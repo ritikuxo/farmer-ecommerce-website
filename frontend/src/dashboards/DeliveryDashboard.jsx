@@ -18,6 +18,7 @@ import {
   MIN_ORDER_VALUE,
   rupee,
 } from "./deliveryEarnings";
+import SupportChat from "../components/SupportChat";
 
 function DeliveryDashboard() {
   const [availableOrders, setAvailableOrders] = useState([]);
@@ -2574,6 +2575,7 @@ function DeliveryDashboard() {
       <style>{styles}</style>
 
       <div className="dlv-app">
+        <SupportChat role="delivery" />
         {/* ==================== SIDEBAR ==================== */}
 
         <aside className={"dlv-sidebar" + (sidebarOpen ? " dlv-open" : "")}>

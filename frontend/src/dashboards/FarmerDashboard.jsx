@@ -25,6 +25,7 @@ import { MIN_ORDER_VALUE, getTripKm, calcCommission } from "./deliveryEarnings";
 import LocationPicker from "../components/LocationPicker";
 import { askEfarmAI, activeEngineLabel, hasApiKey, setStoredKey } from "./aiClient";
 import { MARKET_PRICES, suggestFairPriceAI, evaluatePrice } from "./fairPriceAI";
+import SupportChat from "../components/SupportChat";
 
 /* =========================================================
    AI ANSWER FORMATTING — tiny safe markdown
@@ -3444,6 +3445,7 @@ function FarmerDashboard() {
   return (
     <div className="fd-root">
       {renderSidebar()}
+      <SupportChat role="farmer" />
 
       <div className="fd-main">
         {renderTopbar()}

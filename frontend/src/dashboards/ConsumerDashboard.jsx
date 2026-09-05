@@ -3,6 +3,7 @@ import { auth, db } from "../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
 import "./consumerdashboard.css";
 import { MIN_ORDER_VALUE, getTripKm, calcDeliveryCharge, calcCommission, calcDeliveryEarnings, rupee, DELIVERY_RANGE_KM } from "./deliveryEarnings";
+import SupportChat from "../components/SupportChat";
 import {
   collection,
   getDocs,
@@ -2209,6 +2210,7 @@ function ConsumerDashboard() {
       <style>{cdStyles}</style>
 
       <div className="cd-app">
+        <SupportChat role="consumer" />
         {/* ==================== SIDEBAR ==================== */}
 
         <aside className={"cd-sidebar" + (sidebarOpen ? " cd-open" : "")}>
