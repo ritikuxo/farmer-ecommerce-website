@@ -24,6 +24,7 @@ import "./FarmerDashboard.css";
 import { MIN_ORDER_VALUE, getTripKm, calcCommission } from "./deliveryEarnings";
 import LocationPicker from "../components/LocationPicker";
 import { askEfarmAI, activeEngineLabel, hasApiKey, setStoredKey } from "./aiClient";
+import { MARKET_PRICES, suggestFairPriceAI, evaluatePrice } from "./fairPriceAI";
 
 /* =========================================================
    AI ANSWER FORMATTING — tiny safe markdown
@@ -111,19 +112,6 @@ const AGRI_INPUTS = [
   { id: "agri-store-2", name: "Plastic Storage Bin (200L)", category: "Storage", price: 1650, quantity: 60, description: "200-liter food-grade plastic bin with lid. For grain, pulses & seed storage.", imageUrl: "", farmerId: "efarm-static" },
   { id: "agri-store-3", name: "Mini Metal Silo (1 ton)", category: "Storage", price: 12500, quantity: 15, description: "1-ton capacity galvanized metal silo. Rodent-proof. With discharge chute.", imageUrl: "", farmerId: "efarm-static" },
   { id: "agri-store-4", name: "Jute Sack (50 kg)", category: "Storage", price: 45, quantity: 2000, description: "Natural jute sack for grain & pulse storage. 50 kg capacity. Breathable & eco-friendly.", imageUrl: "", farmerId: "efarm-static" },
-];
-
-const MARKET_PRICES = [
-  { name: "Wheat", history: [2280, 2320, 2290, 2360, 2390, 2425] },
-  { name: "Paddy", history: [1750, 1780, 1770, 1795, 1800, 1820] },
-  { name: "Maize", history: [1680, 1660, 1640, 1625, 1610, 1615] },
-  { name: "Soybean", history: [4400, 4420, 4390, 4370, 4345, 4360] },
-  { name: "Cotton", history: [5350, 5390, 5410, 5400, 5420, 5410] },
-  { name: "Mustard", history: [4900, 4950, 4960, 4990, 5010, 5030] },
-  { name: "Gram", history: [5100, 5140, 5170, 5160, 5190, 5205] },
-  { name: "Onion", history: [1150, 1280, 1360, 1320, 1420, 1470] },
-  { name: "Potato", history: [980, 1040, 1090, 1060, 1120, 1150] },
-  { name: "Tomato", history: [850, 950, 1080, 1010, 1120, 1180] },
 ];
 
 const LOCAL_VENDORS = [
@@ -745,6 +733,8 @@ function FarmerDashboard() {
   const [productImg, setProductImg] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [aiPriceLoading, setAiPriceLoading] = useState(false);
+  const [aiPriceResult, setAiPriceResult] = useState(null);
 
   /* ---------- LOCATION ---------- */
 
@@ -1335,6 +1325,7 @@ function FarmerDashboard() {
 
       setProductName(""); setProductPrice(""); setProductQty(""); setProductDesc(""); setProductImg("");
       setEditingId(null);
+      setAiPriceResult(null);
       await refreshProducts();
     } catch (err) {
       console.error("PRODUCT SAVE ERROR:", err);
@@ -1352,7 +1343,39 @@ function FarmerDashboard() {
     setProductQty(String(p.quantity || ""));
     setProductDesc(p.description || "");
     setProductImg(p.imageUrl || "");
+    setAiPriceResult(null);
     go("myproducts");
+  };
+
+  /* ---------- AI FAIR PRICE ---------- */
+
+  const runFairPriceAI = async () => {
+    if (!productName.trim()) {
+      toast("Type the product name first", "err");
+      return;
+    }
+    setAiPriceLoading(true);
+    try {
+      const res = await suggestFairPriceAI({
+        name: productName,
+        category: productCategory,
+        price: productPrice,
+        description: productDesc,
+      });
+      setAiPriceResult(res);
+      if (!res.matched && !res.aiText) {
+        toast("No mandi rate found for this product — try a common crop name", "err");
+      }
+    } catch {
+      toast("AI price analysis failed. Try again.", "err");
+    } finally {
+      setAiPriceLoading(false);
+    }
+  };
+
+  const applyAiPrice = (v) => {
+    setProductPrice(String(v));
+    toast("Fair price applied ✨");
   };
 
   const deleteProduct = async (id) => {
@@ -2608,6 +2631,7 @@ function FarmerDashboard() {
             <button className="fd-link-btn" onClick={() => {
               setEditingId(null);
               setProductName(""); setProductPrice(""); setProductQty(""); setProductDesc(""); setProductImg("");
+              setAiPriceResult(null);
             }}>
               Cancel editing
             </button>
@@ -2626,7 +2650,12 @@ function FarmerDashboard() {
           </div>
           <div>
             <label>Price (₹ per unit)</label>
-            <input type="number" min="0" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="e.g. 40" />
+            <div className="fd-price-wrap">
+              <input type="number" min="0" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="e.g. 40" />
+              <button type="button" className="fd-ai-btn" onClick={runFairPriceAI} disabled={aiPriceLoading} title="AI suggests a fair price from live mandi rates">
+                {aiPriceLoading ? "…" : "✨ AI"}
+              </button>
+            </div>
           </div>
           <div>
             <label>Quantity (units)</label>
@@ -2645,6 +2674,54 @@ function FarmerDashboard() {
               {savingProduct ? "SAVING..." : editingId ? "UPDATE PRODUCT" : "ADD PRODUCT"}
             </button>
           </div>
+          {(aiPriceLoading || aiPriceResult) && (
+            <div className="full">
+              {aiPriceLoading && (
+                <div className="fd-ai-panel loading">
+                  🤖 Analyzing live mandi rates, trends and your listing…
+                </div>
+              )}
+              {aiPriceResult && !aiPriceLoading && (
+                <div className="fd-ai-panel">
+                  <div className="fd-ai-panel-head">✨ AI Fair Price Analysis</div>
+                  {aiPriceResult.matched ? (
+                    <>
+                      <div className="fd-ai-mandi">
+                        <span>🏛️ Mandi: <b>₹{aiPriceResult.mandiQuintal}/q</b> (₹{aiPriceResult.mandiKg}/kg)</span>
+                        <span>{aiPriceResult.trendPct >= 0 ? "📈" : "📉"} 6-mo: <b>{aiPriceResult.trendPct >= 0 ? "+" : ""}{aiPriceResult.trendPct.toFixed(1)}%</b></span>
+                        <span className={`fd-chip ${aiPriceResult.advice === "high" ? "blue" : aiPriceResult.advice === "low" ? "amber" : "green"}`}>
+                          {aiPriceResult.advice === "high" ? "Your price is above market" : aiPriceResult.advice === "low" ? "Your price is below market" : "No price set yet"}
+                        </span>
+                      </div>
+                      <div className="fd-ai-picks">
+                        <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.budget)}>
+                          ₹{aiPriceResult.budget} <small>Budget · quick sale</small>
+                        </button>
+                        <button type="button" className="fd-ai-pick main" onClick={() => applyAiPrice(aiPriceResult.fair)}>
+                          ₹{aiPriceResult.fair} <small>⭐ Fair · recommended</small>
+                        </button>
+                        <button type="button" className="fd-ai-pick" onClick={() => applyAiPrice(aiPriceResult.premium)}>
+                          ₹{aiPriceResult.premium} <small>Premium · top quality</small>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      🤔 No mandi rate found for "{aiPriceResult.name}" in the E-Farm market dataset.
+                      {aiPriceResult.hasKey ? " The live AI analysis is below." : " Connect an AI key in the AI Assistant page for a full analysis, or try a common crop name (wheat, tomato, onion…)."}
+                    </div>
+                  )}
+                  <ul className="fd-ai-bullets">
+                    {(aiPriceResult.bullets || []).map((b, i) => (
+                      <li key={i}>{b.replace(/\*\*/g, "")}</li>
+                    ))}
+                  </ul>
+                  {aiPriceResult.aiText && <div className="fd-ai-note">🤖 <b>Live AI:</b>{" "}{aiPriceResult.aiText}</div>}
+                  <div className="fd-ai-offline">Powered by E-Farm market engine{aiPriceResult.hasKey ? " + live AI" : " (offline mode — no API key needed)"}</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -2661,6 +2738,7 @@ function FarmerDashboard() {
         {myProducts.map((p) => {
           if (!p) return null;
           const chip = p.inStock ? { label: "In Stock", cls: "green" } : { label: "Out of Stock", cls: "red" };
+          const fair = evaluatePrice(p.name, p.category, p.price);
           return (
             <div className="fd-list-row" key={p.id}>
               <div className="fd-mini-art">
@@ -2671,6 +2749,15 @@ function FarmerDashboard() {
                 <div className="fd-list-sub">{p.category} • {rupee(p.price)} • Qty: {p.quantity} • {fmtDate(p.createdAt?.seconds)}</div>
               </div>
               <span className={`fd-chip ${chip.cls}`}>{chip.label}</span>
+              {fair && (
+                <span
+                  className={`fd-chip ${fair.cls}`}
+                  title={`AI fair price ≈ ₹${fair.fair}/unit • mandi ₹${fair.mandiKg}/kg`}
+                  style={{ cursor: "default" }}
+                >
+                  ✨ {fair.label}
+                </span>
+              )}
               <div className="fd-actions">
                 <button className="fd-btn ghost" onClick={() => startEditProduct(p)}><Ic name="edit" size={13} /> Edit</button>
                 <button className="fd-btn danger" onClick={() => deleteProduct(p.id)}><Ic name="trash" size={13} /> Delete</button>

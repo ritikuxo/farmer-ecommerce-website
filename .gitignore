@@ -1,0 +1,8 @@
+# Firebase CLI cache / local state
+.firebase/
+firebase-debug.log
+.firebaserc
+
+# Env & secrets
+.env
+*.local
